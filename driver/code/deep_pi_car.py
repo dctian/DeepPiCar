@@ -3,6 +3,7 @@ import sys
 import picar
 import cv2
 import matplotlib.pyplot as plt
+from hand_coded_lane_follower import HandCodedLaneFollower
 
 
 class DeepPiCar(object):
@@ -42,6 +43,9 @@ class DeepPiCar(object):
         self.front_wheels.turning_offset = -20 #  calibrate servo to center
         self.front_wheels.turn(90) #  Steering Range is 45 (left) - 90 (center) - 135 (right) 
         
+        lane_follower = HandCodedLaneFollower()
+        #lane_follower = DeepLearningLaneFollower()
+        
         logging.info('Created a DeepPiCar')
     
     def __enter__ (self):
@@ -78,6 +82,10 @@ class DeepPiCar(object):
         self.back_wheels.speed = speed
         while( self.camera.isOpened()):
             _, image = self.camera.read()
+            
+            self.process_objects_on_road(image)
+            image = self.follow_lane(image)
+            
             cv2.imshow('Dash Cam', image)
             #plt.imshow(image, shape=(self.__SCREEN_WIDTH * 2, self.__SCREEN_WIDTH*2))
             #plt.show()
@@ -85,11 +93,18 @@ class DeepPiCar(object):
             if cv2.waitKey(1) & 0xFF == ord('q') :
                 self.cleanup()
                 break
+    
+    def process_objects_on_road(self, image):
+        logging('process_objects_road...')
+
+    def follow_lane(self, image):
+        logging('follow_lane...')
+        image = lane_follower.follow_lane(image, self)
+        return image
 
 def test():
-        with DeepPiCar() as car:
-            car.drive(0)
-        
-    
+    with DeepPiCar() as car:
+        car.drive(0)
+
 if __name__ == '__main__':
     test()
