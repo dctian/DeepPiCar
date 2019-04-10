@@ -30,7 +30,7 @@ class DeepPiCar(object):
         self.pan_servo.write(90)
         
         self.tilt_servo = picar.Servo.Servo(2)
-        self.tilt_servo.offset = 40  # calibrate servo to center
+        self.tilt_servo.offset = 20  # calibrate servo to center
         self.tilt_servo.write(90)
         
         logging.debug('Set up back wheels')
@@ -88,7 +88,7 @@ class DeepPiCar(object):
 
 def test():
         with DeepPiCar() as car:
-            car.drive(20)
+            car.drive(0)
         
     
 if __name__ == '__main__':

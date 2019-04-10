@@ -1,4 +1,4 @@
-from DeepPiCar import DeepPiCar
+from deep_pi_car import DeepPiCar
 import logging
 import sys
 
