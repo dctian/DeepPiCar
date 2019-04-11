@@ -43,7 +43,7 @@ class DeepPiCar(object):
         self.front_wheels.turning_offset = -20 #  calibrate servo to center
         self.front_wheels.turn(90) #  Steering Range is 45 (left) - 90 (center) - 135 (right) 
         
-        lane_follower = HandCodedLaneFollower()
+        self.lane_follower = HandCodedLaneFollower(self)
         #lane_follower = DeepLearningLaneFollower()
         
         logging.info('Created a DeepPiCar')
@@ -95,16 +95,17 @@ class DeepPiCar(object):
                 break
     
     def process_objects_on_road(self, image):
-        logging('process_objects_road...')
+        logging.debug('process_objects_road...')
 
     def follow_lane(self, image):
-        logging('follow_lane...')
-        image = lane_follower.follow_lane(image, self)
+        logging.debug('follow_lane...')
+        image = self.lane_follower.follow_lane(image)
         return image
 
 def test():
     with DeepPiCar() as car:
-        car.drive(0)
+        car.drive(20)
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     test()
