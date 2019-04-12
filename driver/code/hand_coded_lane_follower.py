@@ -3,8 +3,9 @@ import numpy as np
 import logging
 import matplotlib.pyplot as plt
 import math
+import datetime
 
-_SHOW_IMAGE = False
+_SHOW_IMAGE = True
 
 class HandCodedLaneFollower(object):
 
@@ -12,6 +13,7 @@ class HandCodedLaneFollower(object):
         ''' Init camera and wheels'''
         logging.info('Creating a HandCodedLaneFollower...')
         self.car = car
+        self.prev_steering_angle = 90
 
     def follow_lane(self, frame):
         logging.debug('detecting lanes...')
@@ -36,8 +38,12 @@ class HandCodedLaneFollower(object):
         rho = 1 # precision in pixel, i.e. 1 pixel
         angle = np.pi/180 # degree in radian, i.e. 1 degree
         min_threshold = 10 # minimal of votes
-        lines = cv2.HoughLinesP(cropped_canny, rho, angle, min_threshold, np.array([]), minLineLength=10,maxLineGap=4)
-        logging.debug('detected line segments: %s' % lines)
+        lines = cv2.HoughLinesP(cropped_canny, rho, angle, min_threshold, np.array([]), minLineLength=15, maxLineGap=4)
+        
+        if lines is not None:
+            for line in lines :
+                logging.debug('detected line segments:')
+                logging.debug( "%s of length %s" % (line, lenth_of_line_segment( line[0] )))
         if _SHOW_IMAGE:
             line_image = display_lines(frame, lines)
             line_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
@@ -59,11 +65,19 @@ class HandCodedLaneFollower(object):
         
         steering_angle, frame = compute_steering_angle(frame, lanes)
         #cv2.
-        if self.car != None:
-            self.car.front_wheels.turn(steering_angle)
+        if abs(self.prev_steering_angle - steering_angle) <= 10:
+            self.prev_steering_angle = steering_angle
+            if self.car != None:
+                self.car.front_wheels.turn(steering_angle)
+        else :
+            logging.error('ignoring errornous turning decision')
         
         return frame
         
+def lenth_of_line_segment( line ):
+    x1, y1, x2, y2 = line
+    return math.sqrt( (x2-x1)**2 + (y2-y1)**2)
+    
 def show_image(title, image, show = _SHOW_IMAGE):
     if show :
         cv2.imshow(title, image)
@@ -114,6 +128,7 @@ def average_slope_intercept(image, lines):
         return None
     
     for line in lines:
+        import pdb; pdb.set_trace()
         for x1, y1, x2, y2 in line:
             fit = np.polyfit((x1,x2), (y1,y2), 1)
             slope = fit[0]
@@ -142,10 +157,11 @@ def average_slope_intercept(image, lines):
  
 def canny(img):
     # filter for blue lane lines
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) 
-    lower_red = np.array([110,50,50]) 
-    upper_red = np.array([130,255,255])
-    mask = cv2.inRange(hsv, lower_red, upper_red)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    show_image("hsv", hsv)
+    lower_blue = np.array([90,50,50]) 
+    upper_blue = np.array([150,255,255])
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
     show_image("blue mask", mask)
     
     # detect edges
@@ -165,9 +181,10 @@ def region_of_interest(canny):
     height, width = canny.shape
     mask = np.zeros_like(canny)
  
+    # only focus bottom half of the screen 
     polygon = np.array([[
     (0, height * 1/2),
-    (width / 2, height * 1/3),
+    #(width / 2, height * 1/3),
     (width, height * 1/2),
     (width, height),
     (0, height),
@@ -178,33 +195,47 @@ def region_of_interest(canny):
     masked_image = cv2.bitwise_and(canny, mask)
     return masked_image
 
-def test_photo():
+def test_photo(file):
     land_follower = HandCodedLaneFollower()
-    frame = cv2.imread("../data/road3_240x320.png")
+    frame = cv2.imread(file)
     combo_image = land_follower.follow_lane(frame)
     show_image('final', combo_image, True)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
-def test_video():
+def test_video(video_file):
     land_follower = HandCodedLaneFollower()
-    cap = cv2.VideoCapture("../data/road1_240x320.avi")
+    cap = cv2.VideoCapture(video_file+'.avi')
     
     # skip first second of video.
-    for i in range(30):
+    for i in range(3):
         _, frame = cap.read()
         
-    while(cap.isOpened()):
-        _, frame = cap.read()
-        combo_image = land_follower.follow_lane(frame)
-        cv2.imshow("Road with Lane line", combo_image)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cap.release()
-    cv2.destroyAllWindows()
+    try:
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        datestr = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+        video_overlay = cv2.VideoWriter("%s_overlay_%s.avi" % (video_file,datestr),fourcc, 20.0, (320,240))
+        i = 0
+        while(cap.isOpened()):
+            _, frame = cap.read()
+            cv2.imwrite("%s_%03d.png" % (video_file,i), frame)
+            
+            combo_image = land_follower.follow_lane(frame)
+            cv2.imwrite("%s_overlay_%03d.png" % (video_file,i), combo_image)
+            video_overlay.write(combo_image)
+            
+            cv2.imshow("Road with Lane line", combo_image)
+            
+            i += 1
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    finally:
+        cap.release()
+        video_overlay.release()
+        cv2.destroyAllWindows()
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
-    test_video()
-    #test_photo()    
+    #test_video('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646')
+    test_photo('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646_045.png')    

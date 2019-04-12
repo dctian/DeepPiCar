@@ -3,6 +3,7 @@ import sys
 import picar
 import cv2
 import matplotlib.pyplot as plt
+import datetime
 from hand_coded_lane_follower import HandCodedLaneFollower
 
 
@@ -46,6 +47,11 @@ class DeepPiCar(object):
         self.lane_follower = HandCodedLaneFollower(self)
         #lane_follower = DeepLearningLaneFollower()
         
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        datestr = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+        self.video_orig = cv2.VideoWriter('../data/car_video_%s_orig.avi' % datestr,fourcc, 20.0, (320,240))
+        self.video_overlay = cv2.VideoWriter('../data/car_video_%s_overlay.avi' % datestr,fourcc, 20.0, (320,240))
+
         logging.info('Created a DeepPiCar')
     
     def __enter__ (self):
@@ -54,12 +60,9 @@ class DeepPiCar(object):
         
     def __exit__ (self, type, value, traceback):
         ''' Exit a with statement'''
-        if traceback is None:
-            # No exception
-            logging.info('Exiting with statement normally ')
-        else:
+        if traceback is not None:
             # Exception occurred:
-            logging.error('Exiting with statement normally %s' % (traceback))
+            logging.error('Exiting with statement with exception %s' % (traceback))
             
         self.cleanup()
             
@@ -69,6 +72,8 @@ class DeepPiCar(object):
         self.back_wheels.speed = 0
         self.front_wheels.turn(90)
         self.camera.release()
+        self.video_orig.release()
+        self.video_overlay.release()
         cv2.destroyAllWindows()
         
     def drive(self, speed = __INITIAL_SPEED):
@@ -77,15 +82,21 @@ class DeepPiCar(object):
         Keyword arguments:
         speed -- speed of back wheel, range is 0 (stop) - 100 (fastest)
         '''
-        
+
         logging.info('Starting to drive at speed %s...' % speed)
         self.back_wheels.speed = speed
+        i = 0
         while( self.camera.isOpened()):
             _, image = self.camera.read()
+            i += 1
+            
+            self.video_orig.write(image)
+            cv2.
             
             self.process_objects_on_road(image)
             image = self.follow_lane(image)
             
+            self.video_overlay.write(image)
             cv2.imshow('Dash Cam', image)
             #plt.imshow(image, shape=(self.__SCREEN_WIDTH * 2, self.__SCREEN_WIDTH*2))
             #plt.show()
@@ -104,7 +115,7 @@ class DeepPiCar(object):
 
 def test():
     with DeepPiCar() as car:
-        car.drive(20)
+        car.drive(40)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
