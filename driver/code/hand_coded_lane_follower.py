@@ -30,7 +30,7 @@ class HandCodedLaneFollower(object):
             return frame
 
         new_steering_angle = compute_steering_angle(frame, lane_lines)
-        self.curr_steering_angle = self.stabilize_steering_angle(new_steering_angle)
+        self.curr_steering_angle = stabilize_steering_angle(self.curr_steering_angle, new_steering_angle)
 
         if self.car is not None:
             self.car.front_wheels.turn(self.curr_steering_angle)
@@ -38,19 +38,6 @@ class HandCodedLaneFollower(object):
         show_image("heading", curr_heading_image)
 
         return curr_heading_image
-
-    def stabilize_steering_angle(self, new_steering_angle, max_angle_deviation=10):
-        # Using last steering angle to stabilize the steering angle
-        # This can be improved to use last N angles, etc
-        # if new angle is too different from current angle, only turn by max_angle_deviation degrees
-        angle_deviation = new_steering_angle - self.curr_steering_angle
-        if abs(angle_deviation) > max_angle_deviation:
-            stabilized_steering_angle = int(self.curr_steering_angle
-                                            + max_angle_deviation * angle_deviation / abs(angle_deviation))
-        else:
-            stabilized_steering_angle = new_steering_angle
-        logging.debug('Proposed angle: %s, stabilized angle: %s' % new_steering_angle, stabilized_steering_angle)
-        return stabilized_steering_angle
 
 
 ############################
@@ -193,6 +180,22 @@ def compute_steering_angle(frame, lane_lines):
 
     logging.info('new steering angle: %s' % steering_angle)
     return steering_angle
+
+
+def stabilize_steering_angle(curr_steering_angle, new_steering_angle, max_angle_deviation=10):
+    """
+    Using last steering angle to stabilize the steering angle
+    This can be improved to use last N angles, etc
+    if new angle is too different from current angle, only turn by max_angle_deviation degrees
+    """
+    angle_deviation = new_steering_angle - curr_steering_angle
+    if abs(angle_deviation) > max_angle_deviation:
+        stabilized_steering_angle = int(curr_steering_angle
+                                        + max_angle_deviation * angle_deviation / abs(angle_deviation))
+    else:
+        stabilized_steering_angle = new_steering_angle
+    logging.debug('Proposed angle: %s, stabilized angle: %s' % new_steering_angle, stabilized_steering_angle)
+    return stabilized_steering_angle
 
 
 ############################
