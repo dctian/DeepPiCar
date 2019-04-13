@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import math
 import datetime
+import sys
 
 _SHOW_IMAGE = True
 
@@ -82,7 +83,8 @@ def region_of_interest(canny):
     height, width = canny.shape
     mask = np.zeros_like(canny)
 
-    # only focus bottom half of the screen 
+    # only focus bottom half of the screen
+
     polygon = np.array([[
         (0, height * 1 / 2),
         (width, height * 1 / 2),
@@ -127,6 +129,10 @@ def average_slope_intercept(frame, line_segments):
     left_fit = []
     right_fit = []
 
+    boundary = 1/3
+    left_region_boundary = width * (1 - boundary)  # left lane line segment should be on left 2/3 of the screen
+    right_region_boundary = width * boundary # right lane line segment should be on left 2/3 of the screen
+
     for line_segment in line_segments:
         for x1, y1, x2, y2 in line_segment:
             if x1 == x2:
@@ -136,9 +142,11 @@ def average_slope_intercept(frame, line_segments):
             slope = fit[0]
             intercept = fit[1]
             if slope < 0:
-                left_fit.append((slope, intercept))
+                if x1 < left_region_boundary and x2 < left_region_boundary:
+                    left_fit.append((slope, intercept))
             else:
-                right_fit.append((slope, intercept))
+                if x1 > right_region_boundary and x2 > right_region_boundary:
+                    right_fit.append((slope, intercept))
 
     left_fit_average = np.average(left_fit, axis=0)
     if len(left_fit) > 0:
@@ -164,11 +172,11 @@ def compute_steering_angle(frame, lane_lines):
     height, width, _ = frame.shape
     if len(lane_lines) == 1:
         logging.debug('Only detected one lane line, just follow it. %s' % lane_lines[0])
-        x1, _, x2, _ = lane_lines[0]
+        x1, _, x2, _ = lane_lines[0][0]
         x_offset = x2 - x1
     else:
-        _, _, left_x2, _ = lane_lines[0]
-        _, _, right_x2, _ = lane_lines[1]
+        _, _, left_x2, _ = lane_lines[0][0]
+        _, _, right_x2, _ = lane_lines[1][0]
         x_offset = (left_x2 + right_x2) / 2 - width / 2
 
     # find the steering angle, which is angle between navigation direction to end of center line
@@ -194,7 +202,7 @@ def stabilize_steering_angle(curr_steering_angle, new_steering_angle, max_angle_
                                         + max_angle_deviation * angle_deviation / abs(angle_deviation))
     else:
         stabilized_steering_angle = new_steering_angle
-    logging.debug('Proposed angle: %s, stabilized angle: %s' % new_steering_angle, stabilized_steering_angle)
+    logging.debug('Proposed angle: %s, stabilized angle: %s' % (new_steering_angle, stabilized_steering_angle))
     return stabilized_steering_angle
 
 
@@ -226,7 +234,7 @@ def display_heading_line(frame, steering_angle, line_color=(0, 0, 255), line_wid
     steering_angle_radian = steering_angle / 180.0 * math.pi
     x1 = int(width / 2)
     y1 = height
-    x2 = int(x1 - height / 2 / math.atan(steering_angle_radian))
+    x2 = int(x1 - height / 2 / math.tan(steering_angle_radian))
     y2 = int(height / 2)
 
     cv2.line(heading_image, (x1, y1), (x2, y2), line_color, line_width)
@@ -305,4 +313,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
     # test_video('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646')
-    test_photo('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646_045.png')
+    #test_photo('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646_045.png')
+    #test_photo(sys.argv[1])
+    test_video(sys.argv[1])
