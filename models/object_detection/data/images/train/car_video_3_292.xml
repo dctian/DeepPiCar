@@ -1,0 +1,38 @@
+<annotation>
+	<folder>train</folder>
+	<filename>car_video_3_292.png</filename>
+	<path>D:\temp\train\car_video_3_292.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>320</width>
+		<height>240</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Stop Sign</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>256</xmin>
+			<ymin>83</ymin>
+			<xmax>274</xmax>
+			<ymax>104</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>Red Traffic Light</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>56</xmin>
+			<ymin>77</ymin>
+			<xmax>68</xmax>
+			<ymax>94</ymax>
+		</bndbox>
+	</object>
+</annotation>

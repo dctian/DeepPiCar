@@ -1,0 +1,38 @@
+<annotation>
+	<folder>train</folder>
+	<filename>car_video_4_325.png</filename>
+	<path>D:\temp\train\car_video_4_325.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>320</width>
+		<height>240</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Speed Limit 40</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>54</xmin>
+			<ymin>72</ymin>
+			<xmax>79</xmax>
+			<ymax>99</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>Stop Sign</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>263</xmin>
+			<ymin>85</ymin>
+			<xmax>279</xmax>
+			<ymax>103</ymax>
+		</bndbox>
+	</object>
+</annotation>

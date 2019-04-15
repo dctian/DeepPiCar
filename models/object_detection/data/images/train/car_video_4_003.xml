@@ -1,0 +1,38 @@
+<annotation>
+	<folder>train</folder>
+	<filename>car_video_4_003.png</filename>
+	<path>D:\temp\train\car_video_4_003.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>320</width>
+		<height>240</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Red Traffic Light</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>58</xmin>
+			<ymin>78</ymin>
+			<xmax>73</xmax>
+			<ymax>93</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>Red Traffic Light</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>211</xmin>
+			<ymin>76</ymin>
+			<xmax>222</xmax>
+			<ymax>95</ymax>
+		</bndbox>
+	</object>
+</annotation>
