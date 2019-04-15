@@ -11,7 +11,7 @@ import cv2
 from PIL import Image
 
 def main():
-    os.chdir('/home/pi/python-tflite-source/edgetpu')
+    os.chdir('/home/pi/DeepPiCar/models/object_detection')
     
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -40,20 +40,21 @@ def main():
     fontScale = 1
     fontColor = (255,255,255)  # white
     boxColor = (0,0,255)   # RED?
-    boxLineWidth = 2
+    boxLineWidth = 1
     lineType = 2
     
     annotate_text = ""
     annotate_text_time = time.time()
     time_to_show_prediction = 1.0 # ms
-    min_confidence = 0.60
+    min_confidence = 0.20
     
     # initial classification engine
     engine = edgetpu.detection.engine.DetectionEngine(args.model)
     elapsed_ms = 0
     
-    fourcc = cv2.VideoWriter_fourcc(*'X264')
-    out = cv2.VideoWriter('output.avi',fourcc, 20.0, (640,480))
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('output.avi',fourcc, 20.0, (IM_WIDTH,IM_HEIGHT))
+    
     
     try:
         while camera.isOpened():
@@ -77,7 +78,6 @@ def main():
                 elapsed_tf_ms = end_tf_ms - start_ms
                 
                 if results :
-                    #print('%s'% datetime.datetime.now())
                     for obj in results:
                         
                         print("%s, %.0f%% %s %.2fms" % (labels[obj.label_id], obj.score *100, obj.bounding_box, elapsed_tf_ms * 1000))
@@ -89,16 +89,20 @@ def main():
                         coord_top_left = (coord_top_left[0],coord_top_left[1]+15)
                         cv2.putText(img, annotate_text, coord_top_left, font, fontScale, boxColor, lineType )
                     print('------')
+                else:
+                    print('No object detected')
 
-                    # Print Frame rate info
-                    elapsed_ms = time.time() - start_ms
-                    annotate_text = "%.2f FPS, %.2fms total, %.2fms in tf " % (1.0 / elapsed_ms, elapsed_ms*1000, elapsed_tf_ms*1000)
-                    cv2.putText(img, annotate_text, bottomLeftCornerOfText, font, fontScale, fontColor, lineType)
+                # Print Frame rate info
+                elapsed_ms = time.time() - start_ms
+                annotate_text = "%.2f FPS, %.2fms total, %.2fms in tf " % (1.0 / elapsed_ms, elapsed_ms*1000, elapsed_tf_ms*1000)
+                print('%s: %s' % (datetime.datetime.now(), annotate_text))
+                cv2.putText(img, annotate_text, bottomLeftCornerOfText, font, fontScale, fontColor, lineType)
+                
+                out.write(img)
                     
-                    out.write(img)
-                    cv2.imshow('Detected Objects', img)
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        break
+                cv2.imshow('Detected Objects', img)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
             except:
                 # catch it and don't exit the while loop
                 print('In except')
