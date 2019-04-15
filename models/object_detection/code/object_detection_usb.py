@@ -21,13 +21,12 @@ def main():
     args = parser.parse_args()
     
     #args.model = 'test_data/mobilenet_ssd_v2_coco_quant_postprocess.tflite'
-    args.model = 'test_data/mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
-    args.label = 'test_data/coco_labels.txt'
+    args.model = 'data/model_result/road_signs_quantized.tflite'
+    args.label = 'data/model_result/road_sign_labels.txt'
         
     with open(args.label, 'r') as f:
         pairs = (l.strip().split(maxsplit=1) for l in f.readlines())
         labels = dict((int(k), v) for k, v in pairs)
-
 
     # initialize open cv
     IM_WIDTH = 640
