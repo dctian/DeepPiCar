@@ -91,7 +91,6 @@ class DeepPiCar(object):
             i += 1
             
             self.video_orig.write(image)
-            cv2.
             
             self.process_objects_on_road(image)
             image = self.follow_lane(image)
@@ -115,7 +114,7 @@ class DeepPiCar(object):
 
 def test():
     with DeepPiCar() as car:
-        car.drive(40)
+        car.drive(30)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

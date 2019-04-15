@@ -5,7 +5,7 @@ import math
 import datetime
 import sys
 
-_SHOW_IMAGE = True
+_SHOW_IMAGE = False
 
 
 class HandCodedLaneFollower(object):
@@ -186,11 +186,11 @@ def compute_steering_angle(frame, lane_lines):
     angle_to_mid_deg = int(angle_to_mid_radian * 180.0 / math.pi)  # angle (in degrees) to center vertical line
     steering_angle = angle_to_mid_deg + 90  # this is the steering angle needed by picar front wheel
 
-    logging.info('new steering angle: %s' % steering_angle)
+    logging.debug('new steering angle: %s' % steering_angle)
     return steering_angle
 
 
-def stabilize_steering_angle(curr_steering_angle, new_steering_angle, max_angle_deviation=10):
+def stabilize_steering_angle(curr_steering_angle, new_steering_angle, max_angle_deviation=1):
     """
     Using last steering angle to stabilize the steering angle
     This can be improved to use last N angles, etc
@@ -202,7 +202,7 @@ def stabilize_steering_angle(curr_steering_angle, new_steering_angle, max_angle_
                                         + max_angle_deviation * angle_deviation / abs(angle_deviation))
     else:
         stabilized_steering_angle = new_steering_angle
-    logging.debug('Proposed angle: %s, stabilized angle: %s' % (new_steering_angle, stabilized_steering_angle))
+    logging.info('Proposed angle: %s, stabilized angle: %s' % (new_steering_angle, stabilized_steering_angle))
     return stabilized_steering_angle
 
 
