@@ -1,0 +1,38 @@
+<annotation>
+	<folder>train</folder>
+	<filename>car_video_3_241.png</filename>
+	<path>D:\temp\train\car_video_3_241.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>320</width>
+		<height>240</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Stop Sign</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>127</xmin>
+			<ymin>75</ymin>
+			<xmax>141</xmax>
+			<ymax>88</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>Green Traffic Light</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>291</xmin>
+			<ymin>88</ymin>
+			<xmax>305</xmax>
+			<ymax>118</ymax>
+		</bndbox>
+	</object>
+</annotation>
