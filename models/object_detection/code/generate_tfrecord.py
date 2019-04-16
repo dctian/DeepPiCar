@@ -57,7 +57,7 @@ def create_tf_example(group, path, label_map):
     width, height = image.size
 
     filename = group.filename.encode("utf8")
-    image_format = b"png"
+    image_format = b"jpg"
     # check if the image format is matching with your images.
     xmins = []
     xmaxs = []
