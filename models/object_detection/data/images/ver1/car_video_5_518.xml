@@ -1,0 +1,26 @@
+<annotation>
+	<folder>train</folder>
+	<filename>car_video_5_518.png</filename>
+	<path>D:\temp\train\car_video_5_518.png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>320</width>
+		<height>240</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Person</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>101</xmin>
+			<ymin>126</ymin>
+			<xmax>129</xmax>
+			<ymax>183</ymax>
+		</bndbox>
+	</object>
+</annotation>
