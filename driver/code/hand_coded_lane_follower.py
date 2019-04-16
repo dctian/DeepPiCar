@@ -5,19 +5,53 @@ import math
 import datetime
 import sys
 
-_SHOW_IMAGE = False
+_SHOW_IMAGE = True
 
 
 class HandCodedLaneFollower(object):
 
-    def __init__(self, car=None):
+    def __init__(self, frame_shape, car=None):
         logging.info('Creating a HandCodedLaneFollower...')
         self.car = car
         self.curr_steering_angle = 90
 
+        # set up dashcam view to top down view conversion matrix
+        # the dashcam view points need to be calibrated for each camera
+        height, width, _ = frame_shape
+        top_left     = (98, 122)
+        top_right    = (221,122)
+        bottom_left  = (0,192)
+        bottom_right = (300, 192)
+
+        # cv2.circle(frame, top_left,     2, (0, 0, 255), -1)
+        # cv2.circle(frame, top_right,    2, (0, 0, 255), -1)
+        # cv2.circle(frame, bottom_left,  2, (0, 0, 255), -1)
+        # cv2.circle(frame, bottom_right, 2, (0, 0, 255), -1)
+        # show_image("orig", frame)
+
+        dashcam_view_pts = np.array([top_left,
+                                       top_right,
+                                       bottom_left,
+                                       bottom_right], dtype='float32')
+        topdown_view_pts = np.array([[int(width * 0.3), 122],
+                                       [int(width * 0.7 ), 122],
+                                       [int(width * 0.3), 192],
+                                       [int(width * 0.7 ), 192]], dtype='float32')
+        self.dashcam_to_topdown_transform = cv2.getPerspectiveTransform(dashcam_view_pts, topdown_view_pts)
+        self.topdown_to_dashcam_transform = cv2.getPerspectiveTransform(topdown_view_pts, dashcam_view_pts)
+
+        # topdown_frame = cv2.warpPerspective(frame, self.dashcam_to_topdown_transform, (width, height))
+
+        # need to convert dashcam_view_pts to a 3D array like this: np.array([dashcam_view_pts])
+        # returned topdown_view_pts2 is also 3D array: [[[  96.  122.] [ 224.  122.] [  96.  192.] [ 224.  192.]]]
+        # topdown_view_pts2 = cv2.perspectiveTransform(np.array([dashcam_view_pts]), self.dashcam_to_topdown_transform)
+
+        # print( topdown_view_pts2 )
+        # show_image("arial", topdown_frame)
+        return
+
     def follow_lane(self, frame):
         # Main entry point of the lane follower
-        show_image("orig", frame)
 
         lane_lines, frame = detect_lane(frame)
         final_frame = self.steer(frame, lane_lines)
@@ -30,7 +64,8 @@ class HandCodedLaneFollower(object):
             logging.error('No lane lines detected, nothing to do.')
             return frame
 
-        new_steering_angle = compute_steering_angle(frame, lane_lines)
+        new_steering_angle = self.compute_steering_angle(frame, lane_lines)
+        self.compute_steering_angle_old(frame, lane_lines)
         self.curr_steering_angle = stabilize_steering_angle(self.curr_steering_angle, new_steering_angle)
 
         if self.car is not None:
@@ -39,6 +74,68 @@ class HandCodedLaneFollower(object):
         show_image("heading", curr_heading_image)
 
         return curr_heading_image
+
+    def compute_steering_angle(self, frame, lane_lines):
+        """ Find the steering angle based on lane line coordinate
+            We assume that camera is calibrated to point to dead center
+        """
+        if len(lane_lines) == 0:
+            err = 'No lane lines detected, should never in compute_steering_angle()'
+            logging.error()
+            raise Exception(err)
+
+        # transform lane_lines to top down view
+        lane_lines_pts = np.reshape(lane_lines, (-1,2,2)).astype("float32")
+        lane_lines_topdown = cv2.perspectiveTransform(lane_lines_pts, self.dashcam_to_topdown_transform)
+
+        height, width, _ = frame.shape
+        if len(lane_lines) == 1:
+            logging.debug('Only detected one lane line, just follow it. %s' % lane_lines_topdown[0])
+            x1 = lane_lines_topdown[0][0][0]
+            x2 = lane_lines_topdown[0][1][0]
+            x_offset = x2 - x1
+        else:
+            left_x2  = lane_lines_topdown[0][1][0]
+            right_x2 = lane_lines_topdown[1][1][0]
+            x_offset = (left_x2 + right_x2) / 2 - width / 2
+
+        # find the steering angle, which is angle between navigation direction to end of center line
+        y_offset = int(height / 2)
+
+        angle_to_mid_radian = math.atan(x_offset / y_offset)  # angle (in radian) to center vertical line
+        angle_to_mid_deg = int(angle_to_mid_radian * 180.0 / math.pi)  # angle (in degrees) to center vertical line
+        steering_angle = angle_to_mid_deg + 90  # this qis the steering angle needed by picar front wheel
+
+        logging.debug('new steering angle: %s' % steering_angle)
+        return steering_angle
+
+    def compute_steering_angle_old(self, frame, lane_lines):
+        """ Find the steering angle based on lane line coordinate
+            We assume that camera is calibrated to point to dead center
+        """
+        if len(lane_lines) == 0:
+            logging.info('No lane lines detected, do nothing')
+            return -90
+
+        height, width, _ = frame.shape
+        if len(lane_lines) == 1:
+            logging.debug('Only detected one lane line, just follow it. %s' % lane_lines[0])
+            x1, _, x2, _ = lane_lines[0][0]
+            x_offset = x2 - x1
+        else:
+            _, _, left_x2, _ = lane_lines[0][0]
+            _, _, right_x2, _ = lane_lines[1][0]
+            x_offset = (left_x2 + right_x2) / 2 - width / 2
+
+        # find the steering angle, which is angle between navigation direction to end of center line
+        y_offset = int(height / 2)
+
+        angle_to_mid_radian = math.atan(x_offset / y_offset)  # angle (in radian) to center vertical line
+        angle_to_mid_deg = int(angle_to_mid_radian * 180.0 / math.pi)  # angle (in degrees) to center vertical line
+        steering_angle = angle_to_mid_deg + 90  # this is the steering angle needed by picar front wheel
+
+        logging.debug('new steering angle (old): %s' % steering_angle)
+        return steering_angle
 
 
 ############################
@@ -161,35 +258,6 @@ def average_slope_intercept(frame, line_segments):
     return lane_lines
 
 
-def compute_steering_angle(frame, lane_lines):
-    """ Find the steering angle based on lane line coordinate
-        We assume that camera is calibrated to point to dead center
-    """
-    if len(lane_lines) == 0:
-        logging.info('No lane lines detected, do nothing')
-        return -90
-
-    height, width, _ = frame.shape
-    if len(lane_lines) == 1:
-        logging.debug('Only detected one lane line, just follow it. %s' % lane_lines[0])
-        x1, _, x2, _ = lane_lines[0][0]
-        x_offset = x2 - x1
-    else:
-        _, _, left_x2, _ = lane_lines[0][0]
-        _, _, right_x2, _ = lane_lines[1][0]
-        x_offset = (left_x2 + right_x2) / 2 - width / 2
-
-    # find the steering angle, which is angle between navigation direction to end of center line
-    y_offset = int(height / 2)
-
-    angle_to_mid_radian = math.atan(x_offset / y_offset)  # angle (in radian) to center vertical line
-    angle_to_mid_deg = int(angle_to_mid_radian * 180.0 / math.pi)  # angle (in degrees) to center vertical line
-    steering_angle = angle_to_mid_deg + 90  # this is the steering angle needed by picar front wheel
-
-    logging.debug('new steering angle: %s' % steering_angle)
-    return steering_angle
-
-
 def stabilize_steering_angle(curr_steering_angle, new_steering_angle, max_angle_deviation=1):
     """
     Using last steering angle to stabilize the steering angle
@@ -269,8 +337,8 @@ def make_points(frame, line):
 # Test Functions
 ############################
 def test_photo(file):
-    land_follower = HandCodedLaneFollower()
     frame = cv2.imread(file)
+    land_follower = HandCodedLaneFollower(frame.shape)
     combo_image = land_follower.follow_lane(frame)
     show_image('final', combo_image, True)
     cv2.waitKey(0)
@@ -314,5 +382,5 @@ if __name__ == '__main__':
 
     # test_video('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646')
     #test_photo('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646_045.png')
-    #test_photo(sys.argv[1])
-    test_video(sys.argv[1])
+    test_photo(sys.argv[1])
+    #test_video(sys.argv[1])
