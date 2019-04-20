@@ -13,7 +13,6 @@ def main():
         cv2.imshow('B/W', b_w_image)
         
         if cv2.waitKey(1) & 0xFF == ord('q') :
-            self.cleanup()
             break
             
     cv2.destroyAllWindows()
