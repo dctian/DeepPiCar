@@ -2,7 +2,6 @@ import logging
 import sys
 import picar
 import cv2
-import matplotlib.pyplot as plt
 import datetime
 from hand_coded_lane_follower import HandCodedLaneFollower
 
@@ -112,10 +111,10 @@ class DeepPiCar(object):
         image = self.lane_follower.follow_lane(image)
         return image
 
-def test():
+def main():
     with DeepPiCar() as car:
-        car.drive(30)
+        car.drive(40)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    test()
+    main()
