@@ -1,12 +1,11 @@
 import cv2
-import numpy as np
 import logging
-import math
 import datetime
-import sys
 import time
+import edgetpu.detection.engine
+from PIL import Image
 
-_SHOW_IMAGE = True
+_SHOW_IMAGE = False
 
 
 class ObjectsOnRoadProcessor(object):
@@ -18,8 +17,10 @@ class ObjectsOnRoadProcessor(object):
     def __init__(self,
                  car=None,
                  speed_limit=40,
-                 model='data/model_result/road_signs_quantized_edgetpu.tflite',
-                 label='data/model_result/road_sign_labels.txt'):
+                 model='/home/pi/DeepPiCar/models/object_detection/data/model_result/road_signs_quantized_edgetpu.tflite',
+                 label='/home/pi/DeepPiCar/models/object_detection/data/model_result/road_sign_labels.txt',
+                 width=640,
+                 height=480):
         # model: This MUST be a tflite model that was specifically compiled for Edge TPU.
         # https://coral.withgoogle.com/web-compiler/
         logging.info('Creating a ObjectsOnRoadProcessor...')
@@ -28,7 +29,7 @@ class ObjectsOnRoadProcessor(object):
         self.car = car
         self.speed_limit = speed_limit
         self.speed = 0
-        resume_driving()
+        self.resume_driving()
 
         # initialize TensorFlow models
         with open(label, 'r') as f:
@@ -36,13 +37,15 @@ class ObjectsOnRoadProcessor(object):
             self.labels = dict((int(k), v) for k, v in pairs)
 
         # initial edge TPU engine
+        logging.info('Initialize Edge TPU with model %s...' % model)
         self.engine = edgetpu.detection.engine.DetectionEngine(model)
         self.min_confidence = 0.30
         self.num_of_objects = 3
+        logging.info('Initialize Edge TPU with model %s done.' % model)
 
         # initialize open cv for drawing boxes
         self.font = cv2.FONT_HERSHEY_SIMPLEX
-        self.bottomLeftCornerOfText = (10, IM_HEIGHT - 10)
+        self.bottomLeftCornerOfText = (10, height - 10)
         self.fontScale = 1
         self.fontColor = (255, 255, 255)  # white
         self.boxColor = (0, 0, 255)  # RED
@@ -54,8 +57,8 @@ class ObjectsOnRoadProcessor(object):
 
     def process_objects_on_road(self, frame):
         # Main entry point of the Road Object Handler
-        objects, final_frame = detect_objects(frame)
-        self.control_car(objects)
+        objects, final_frame = self.detect_objects(frame)
+        #self.control_car(objects)
 
         return final_frame
 
@@ -64,7 +67,7 @@ class ObjectsOnRoadProcessor(object):
         if len(objects) == 0:
             logging.info('No objects detected, drive at speed limit of %s.' % self.speed_limit)
             self.resume_driving()
-            return frame
+            return
 
         secs_to_wait_at_stop_sign = 2
 
@@ -104,40 +107,40 @@ class ObjectsOnRoadProcessor(object):
         if self.car is not None:
             self.car.speed = speed
 
+    ############################
+    # Frame processing steps
+    ############################
+    def detect_objects(self, frame):
+        logging.debug('Detecting object in the frame...')
 
-############################
-# Frame processing steps
-############################
-def detect_objects(frame):
-    logging.debug('detecting object in the frame...')
+        # call tpu for inference
+        start_ms = time.time()
+        frame_RGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(frame_RGB)
+        objects = self.engine.DetectWithImage(img_pil, threshold=self.min_confidence, keep_aspect_ratio=True,
+                                         relative_coord=False, top_k=self.num_of_objects)
+        if objects:
+            for obj in objects:
+                logging.info("%s, %.0f%% %s" % (self.labels[obj.label_id], obj.score * 100, obj.bounding_box))
+                box = obj.bounding_box
+                coord_top_left = (int(box[0][0]), int(box[0][1]))
+                coord_bottom_right = (int(box[1][0]), int(box[1][1]))
+                cv2.rectangle(frame, coord_top_left, coord_bottom_right, self.boxColor, self.boxLineWidth)
+                annotate_text = "%s %.0f%%" % (self.labels[obj.label_id], obj.score * 100)
+                coord_top_left = (coord_top_left[0], coord_top_left[1] + 15)
+                cv2.putText(frame, annotate_text, coord_top_left, self.font, self.fontScale, self.boxColor, self.lineType)
+            logging.info('------')
+        else:
+            logging.info('No object detected')
 
-    # call tpu for inference
-    start_tf_ms = time.time()
-    objects = engine.DetectWithImage(img_pil, threshold=self.min_confidence, keep_aspect_ratio=True,
-                                     relative_coord=False, top_k=self.num_of_objects_to_detect)
-    end_tf_ms = time.time()
-    elapsed_tf_ms = end_tf_ms - start_tf_ms
+        elapsed_ms = time.time() - start_ms
 
-    if objects:
-        logging.info("Infer: %.1fps" % (1.0 / elapsed_tf_ms))
-        for obj in objects:
-            logging.info("%s, %.0f%% %s" % (labels[obj.label_id], obj.score * 100, obj.bounding_box))
-            box = obj.bounding_box
-            coord_top_left = (int(box[0][0]), int(box[0][1]))
-            coord_bottom_right = (int(box[1][0]), int(box[1][1]))
-            cv2.rectangle(img, coord_top_left, coord_bottom_right, boxColor, boxLineWidth)
-            annotate_text = "%s, %.0f%%" % (labels[obj.label_id], obj.score * 100)
-            coord_top_left = (coord_top_left[0], coord_top_left[1] + 15)
-            cv2.putText(frame, annotate_text, coord_top_left, self.font, self.fontScale, self.boxColor, self.lineType)
-        logging.info('------')
-    else:
-        logging.info('No object detected')
+        annotate_summary = "%.1f FPS" % (1.0/elapsed_ms)
+        logging.info(annotate_summary)
+        cv2.putText(frame, annotate_summary, self.bottomLeftCornerOfText, self.font, self.fontScale, self.fontColor, self.lineType)
+        #cv2.imshow('Detected Objects', frame)
 
-    annotate_summary = "%.1f FPS total, %.1f FPS infer" % (1.0/elapsed_ms, 1.0/elapsed_tf_ms)
-    logging.info('%s: %s' % (datetime.datetime.now(), annotate_summary))
-    cv2.putText(frame, annotate_summary, bottomLeftCornerOfText, font, fontScale, fontColor, lineType)
-
-    return objects, frame
+        return objects, frame
 
 
 ############################
@@ -205,9 +208,9 @@ def test_video(video_file):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG, format='%(levelname)-5s:%(asctime)s: %(message)s')
 
     # test_video('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646')
-    # test_photo('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646_045.png')
+    test_photo('/home/pi/DeepPiCar/driver/data/objects/red_light.jpg')
     # test_photo(sys.argv[1])
-    test_video(sys.argv[1])
+    #test_video(sys.argv[1])

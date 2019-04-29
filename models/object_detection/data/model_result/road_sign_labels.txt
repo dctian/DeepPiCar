@@ -1,6 +1,6 @@
-0 Green Traffic Light
+0 Green
 1 Person
-2 Red Traffic Light
-3 Speed Limit 25
-4 Speed Limit 40
-5 Stop Sign
+2 Red
+3 Limit 25
+4 Limit 40
+5 Stop
