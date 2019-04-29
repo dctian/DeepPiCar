@@ -4,6 +4,7 @@ import datetime
 import time
 import edgetpu.detection.engine
 from PIL import Image
+from traffic_objects import *
 
 _SHOW_IMAGE = False
 
@@ -24,12 +25,13 @@ class ObjectsOnRoadProcessor(object):
         # model: This MUST be a tflite model that was specifically compiled for Edge TPU.
         # https://coral.withgoogle.com/web-compiler/
         logging.info('Creating a ObjectsOnRoadProcessor...')
+        self.width = width
+        self.height = height
 
         # initialize car
         self.car = car
         self.speed_limit = speed_limit
-        self.speed = 0
-        self.resume_driving()
+        self.speed = 40
 
         # initialize TensorFlow models
         with open(label, 'r') as f:
@@ -39,9 +41,9 @@ class ObjectsOnRoadProcessor(object):
         # initial edge TPU engine
         logging.info('Initialize Edge TPU with model %s...' % model)
         self.engine = edgetpu.detection.engine.DetectionEngine(model)
-        self.min_confidence = 0.30
+        self.min_confidence = 0.40
         self.num_of_objects = 3
-        logging.info('Initialize Edge TPU with model %s done.' % model)
+        logging.info('Initialize Edge TPU with model done.')
 
         # initialize open cv for drawing boxes
         self.font = cv2.FONT_HERSHEY_SIMPLEX
@@ -55,51 +57,56 @@ class ObjectsOnRoadProcessor(object):
         self.annotate_text_time = time.time()
         self.time_to_show_prediction = 1.0  # ms
 
+        #
+        self.traffic_objects = {0: GreenTrafficLight(),
+                                1: Person(),
+                                2: RedTrafficLight(),
+                                3: SpeedLimit(25),
+                                4: SpeedLimit(40),
+                                5: StopSign()}
+
     def process_objects_on_road(self, frame):
         # Main entry point of the Road Object Handler
+        logging.debug('Processing objects.................................')
         objects, final_frame = self.detect_objects(frame)
-        #self.control_car(objects)
+        self.control_car(objects)
+        logging.debug('Processing objects END..............................')
 
         return final_frame
 
-    def control_car(self, objects, min_obj_height=50):
-        logging.debug('processing objects...')
+    def control_car(self, objects):
+        logging.debug('Control car...')
+        car_state = {"speed": self.speed_limit, "speed_limit": self.speed_limit}
+
         if len(objects) == 0:
-            logging.info('No objects detected, drive at speed limit of %s.' % self.speed_limit)
-            self.resume_driving()
-            return
+            logging.debug('No objects detected, drive at speed limit of %s.' % self.speed_limit)
 
-        secs_to_wait_at_stop_sign = 2
+        contain_stop_sign = False
+        for obj in objects:
+            obj_label = self.labels[obj.label_id]
+            processor = self.traffic_objects[obj.label_id]
+            if processor.is_close_by(obj, self.height):
+                processor.set_car_state(car_state)
+            else:
+                logging.debug("[%s] object detected, but it is too far, ignoring. " % obj_label)
+            if obj_label == 'Stop':
+                contain_stop_sign = True
 
-        largest_object = find_largest_object(objects)
-        if largest_object.height > min_obj_height:
-            # ensure the object is close enough
-            obj_label = self.labels[largest_object.label_id]
-            if obj_label == 'Person':
-                logging.info('Waiting for person to cross')
-                self.set_speed(0)
-            if obj_label == 'Red Traffic Light':
-                logging.info('Stopped at red light')
-                self.set_speed(0)
-            elif obj_label == 'Stop Sign':
-                logging.info('Stopping at stop sign for %s sec' % secs_to_wait_at_stop_sign)
-                self.set_speed(0)
-                time.sleep(secs_to_wait_at_stop_sign)
-                self.resume_driving()
-            elif obj_label == 'Speed Limit 40':
-                self.speed_limit = 40
-                self.resume_driving()
-            elif obj_label == 'Speed Limit 25':
-                self.speed_limit = 25
-                self.resume_driving()
-            elif obj_label == 'Green Traffic Light':
-                self.resume_driving()
-            return
+        if not contain_stop_sign:
+            self.traffic_objects[5].clear()
 
-    def resume_driving(self):
-        if self.speed != self.speed_limit:
-            logging.info('Current Speed = %d, New Speed = %d' % (self.speed, self.speed_limit))
+        self.resume_driving(car_state)
+
+    def resume_driving(self, car_state):
+        old_speed = self.speed
+        self.speed_limit = car_state['speed_limit']
+        self.speed = car_state['speed']
+
+        if self.speed == 0:
+            self.set_speed(0)
+        else:
             self.set_speed(self.speed_limit)
+        logging.debug('Current Speed = %d, New Speed = %d' % (old_speed, self.speed))
 
     def set_speed(self, speed):
         # Use this setter, so we can test this class without a car attached
@@ -111,7 +118,7 @@ class ObjectsOnRoadProcessor(object):
     # Frame processing steps
     ############################
     def detect_objects(self, frame):
-        logging.debug('Detecting object in the frame...')
+        logging.debug('Detecting objects...')
 
         # call tpu for inference
         start_ms = time.time()
@@ -121,7 +128,9 @@ class ObjectsOnRoadProcessor(object):
                                          relative_coord=False, top_k=self.num_of_objects)
         if objects:
             for obj in objects:
-                logging.info("%s, %.0f%% %s" % (self.labels[obj.label_id], obj.score * 100, obj.bounding_box))
+                height = obj.bounding_box[1][1]-obj.bounding_box[0][1]
+                width = obj.bounding_box[1][0]-obj.bounding_box[0][0]
+                logging.debug("%s, %.0f%% w=%.0f h=%.0f" % (self.labels[obj.label_id], obj.score * 100, width, height))
                 box = obj.bounding_box
                 coord_top_left = (int(box[0][0]), int(box[0][1]))
                 coord_bottom_right = (int(box[1][0]), int(box[1][1]))
@@ -129,14 +138,13 @@ class ObjectsOnRoadProcessor(object):
                 annotate_text = "%s %.0f%%" % (self.labels[obj.label_id], obj.score * 100)
                 coord_top_left = (coord_top_left[0], coord_top_left[1] + 15)
                 cv2.putText(frame, annotate_text, coord_top_left, self.font, self.fontScale, self.boxColor, self.lineType)
-            logging.info('------')
         else:
-            logging.info('No object detected')
+            logging.debug('No object detected')
 
         elapsed_ms = time.time() - start_ms
 
         annotate_summary = "%.1f FPS" % (1.0/elapsed_ms)
-        logging.info(annotate_summary)
+        logging.debug(annotate_summary)
         cv2.putText(frame, annotate_summary, self.bottomLeftCornerOfText, self.font, self.fontScale, self.fontColor, self.lineType)
         #cv2.imshow('Detected Objects', frame)
 
@@ -146,18 +154,6 @@ class ObjectsOnRoadProcessor(object):
 ############################
 # Utility Functions
 ############################
-def find_largest_object(objects):
-    largest_object = None
-    max_height = 0
-    for obj in objects:
-        box = obj.bounding_box
-        height = int(box[0][1] - box[0][0])
-        if height >= max_height:
-            largest_object = obj
-    largest_object.height = max_height
-    return largest_object
-
-
 def show_image(title, frame, show=_SHOW_IMAGE):
     if show:
         cv2.imshow(title, frame)
@@ -170,10 +166,32 @@ def test_photo(file):
     object_processor = ObjectsOnRoadProcessor()
     frame = cv2.imread(file)
     combo_image = object_processor.process_objects_on_road(frame)
-    show_image('Detected Objects', combo_image, True)
+    show_image('Detected Objects', combo_image)
+
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+def test_stop_sign():
+    # this simulates a car at stop sign
+    object_processor = ObjectsOnRoadProcessor()
+    frame = cv2.imread('/home/pi/DeepPiCar/driver/data/objects/stop_sign.jpg')
+    combo_image = object_processor.process_objects_on_road(frame)
+    show_image('Stop 1', combo_image)
+    time.sleep(1)
+    frame = cv2.imread('/home/pi/DeepPiCar/driver/data/objects/stop_sign.jpg')
+    combo_image = object_processor.process_objects_on_road(frame)
+    show_image('Stop 2', combo_image)
+    time.sleep(2)
+    frame = cv2.imread('/home/pi/DeepPiCar/driver/data/objects/stop_sign.jpg')
+    combo_image = object_processor.process_objects_on_road(frame)
+    show_image('Stop 3', combo_image)
+    time.sleep(1)
+    frame = cv2.imread('/home/pi/DeepPiCar/driver/data/objects/green_light.jpg')
+    combo_image = object_processor.process_objects_on_road(frame)
+    show_image('Stop 4', combo_image)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 def test_video(video_file):
     object_processor = ObjectsOnRoadProcessor()
@@ -210,7 +228,13 @@ def test_video(video_file):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)-5s:%(asctime)s: %(message)s')
 
-    # test_video('/home/pi/DeepPiCar/driver/data/car_video_orig_190411_111646/car_video_orig_190411_111646')
+    # These processors contains no state
     test_photo('/home/pi/DeepPiCar/driver/data/objects/red_light.jpg')
-    # test_photo(sys.argv[1])
-    #test_video(sys.argv[1])
+    test_photo('/home/pi/DeepPiCar/driver/data/objects/person.jpg')
+    test_photo('/home/pi/DeepPiCar/driver/data/objects/limit_40.jpg')
+    test_photo('/home/pi/DeepPiCar/driver/data/objects/limit_25.jpg')
+    test_photo('/home/pi/DeepPiCar/driver/data/objects/green_light.jpg')
+    test_photo('/home/pi/DeepPiCar/driver/data/objects/no_obj.jpg')
+
+    # test stop sign, which carries state
+    test_stop_sign()
