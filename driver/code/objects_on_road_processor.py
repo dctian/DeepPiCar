@@ -31,7 +31,7 @@ class ObjectsOnRoadProcessor(object):
         # initialize car
         self.car = car
         self.speed_limit = speed_limit
-        self.speed = 40
+        self.speed = speed_limit
 
         # initialize TensorFlow models
         with open(label, 'r') as f:
@@ -41,7 +41,7 @@ class ObjectsOnRoadProcessor(object):
         # initial edge TPU engine
         logging.info('Initialize Edge TPU with model %s...' % model)
         self.engine = edgetpu.detection.engine.DetectionEngine(model)
-        self.min_confidence = 0.40
+        self.min_confidence = 0.30
         self.num_of_objects = 3
         logging.info('Initialize Edge TPU with model done.')
 
@@ -108,11 +108,18 @@ class ObjectsOnRoadProcessor(object):
             self.set_speed(self.speed_limit)
         logging.debug('Current Speed = %d, New Speed = %d' % (old_speed, self.speed))
 
+        if old_speed > 0 and self.speed == 0:
+            logging.debug('come to a full stop for 1 seconds')
+            time.sleep(1)
+
     def set_speed(self, speed):
         # Use this setter, so we can test this class without a car attached
         self.speed = speed
         if self.car is not None:
-            self.car.speed = speed
+            logging.debug("Actually setting car speed to %d" % speed)
+            self.car.back_wheels.speed = speed
+
+
 
     ############################
     # Frame processing steps
