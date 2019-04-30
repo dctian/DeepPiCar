@@ -108,8 +108,8 @@ class ObjectsOnRoadProcessor(object):
             self.set_speed(self.speed_limit)
         logging.debug('Current Speed = %d, New Speed = %d' % (old_speed, self.speed))
 
-        if old_speed > 0 and self.speed == 0:
-            logging.debug('come to a full stop for 1 seconds')
+        if self.speed == 0:
+            logging.debug('full stop for 1 seconds')
             time.sleep(1)
 
     def set_speed(self, speed):
