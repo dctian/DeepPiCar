@@ -105,3 +105,7 @@ venv.bak/
 
 # video/picture files
 tmp/
+
+# pycharm
+.idea/*
+
