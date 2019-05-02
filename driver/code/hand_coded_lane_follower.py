@@ -68,12 +68,34 @@ def detect_edges(frame):
     # filter for blue lane lines
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     show_image("hsv", hsv)
-    lower_blue = np.array([35, 40, 50])
+    lower_blue = np.array([30, 40, 0])
     upper_blue = np.array([150, 255, 255])
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
     show_image("blue mask", mask)
 
     # detect edges
+    edges = cv2.Canny(mask, 200, 400)
+
+    return edges
+
+def detect_edges_old(frame):
+    # filter for blue lane lines
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    show_image("hsv", hsv)
+    for i in range(16):
+        lower_blue = np.array([30, 16 * i, 0])
+        upper_blue = np.array([150, 255, 255])
+        mask = cv2.inRange(hsv, lower_blue, upper_blue)
+        show_image("blue mask Sat=%s" % (16* i), mask)
+
+
+    #for i in range(16):
+        #lower_blue = np.array([16 * i, 40, 50])
+        #upper_blue = np.array([150, 255, 255])
+        #mask = cv2.inRange(hsv, lower_blue, upper_blue)
+       # show_image("blue mask hue=%s" % (16* i), mask)
+
+        # detect edges
     edges = cv2.Canny(mask, 200, 400)
 
     return edges
@@ -177,7 +199,7 @@ def compute_steering_angle(frame, lane_lines):
     else:
         _, _, left_x2, _ = lane_lines[0][0]
         _, _, right_x2, _ = lane_lines[1][0]
-        camera_mid_offset_percent = 0.09 # 0.09 is 9% offset
+        camera_mid_offset_percent = 0.02 # 0.0 means car pointing to center, -0.03: car is centered to left, +0.03 means car pointing to right
         mid = int(width / 2 * (1 + camera_mid_offset_percent))
         x_offset = (left_x2 + right_x2) / 2 - mid
 
@@ -287,7 +309,7 @@ def test_photo(file):
 
 
 def test_video(video_file):
-    land_follower = HandCodedLaneFollower()
+    lane_follower = HandCodedLaneFollower()
     cap = cv2.VideoCapture(video_file + '.avi')
 
     # skip first second of video.
@@ -295,16 +317,16 @@ def test_video(video_file):
         _, frame = cap.read()
 
     video_type = cv2.VideoWriter_fourcc(*'XVID')
-    date_str = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    video_overlay = cv2.VideoWriter("%s_overlay_%s.avi" % (video_file, date_str), video_type, 20.0, (320, 240))
+    video_overlay = cv2.VideoWriter("%s_overlay.avi" % (video_file), video_type, 20.0, (320, 240))
     try:
         i = 0
         while cap.isOpened():
             _, frame = cap.read()
             print('frame %s' % i )
-            cv2.imwrite("%s_%03d.png" % (video_file, i), frame)
-
-            combo_image = land_follower.follow_lane(frame)
+            combo_image= lane_follower.follow_lane(frame)
+            
+            cv2.imwrite("%s_%03d_%03d.png" % (video_file, i, lane_follower.curr_steering_angle), frame)
+            
             cv2.imwrite("%s_overlay_%03d.png" % (video_file, i), combo_image)
             video_overlay.write(combo_image)
             cv2.imshow("Road with Lane line", combo_image)
@@ -321,7 +343,7 @@ def test_video(video_file):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
-    #test_video('/home/pi/DeepPiCar/driver/data/video/car_video_190427_013349')
-    test_photo('/home/pi/DeepPiCar/driver/data/video/car_video_190427_013349_028.png')
+    test_video('/home/pi/DeepPiCar/driver/data/tmp/video01')
+    #test_photo('/home/pi/DeepPiCar/driver/data/video/car_video_190427_110320_073.png')
     #test_photo(sys.argv[1])
     #test_video(sys.argv[1])
