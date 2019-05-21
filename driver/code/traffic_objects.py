@@ -2,7 +2,7 @@ from threading import Timer
 import logging
 
 
-class TrafficObjects(object):
+class TrafficObject(object):
 
     def set_car_state(self, car_state):
         pass
@@ -14,20 +14,20 @@ class TrafficObjects(object):
         return obj_height / frame_height > min_height_pct
 
 
-class RedTrafficLight(TrafficObjects):
+class RedTrafficLight(TrafficObject):
 
     def set_car_state(self, car_state):
         logging.debug('red light: stopping car')
         car_state['speed'] = 0
 
 
-class GreenTrafficLight(TrafficObjects):
+class GreenTrafficLight(TrafficObject):
 
     def set_car_state(self, car_state):
         logging.debug('green light: make no changes')
 
 
-class Person(TrafficObjects):
+class Person(TrafficObject):
 
     def set_car_state(self, car_state):
         logging.debug('pedestrian: stopping car')
@@ -35,7 +35,7 @@ class Person(TrafficObjects):
         car_state['speed'] = 0
 
 
-class SpeedLimit(TrafficObjects):
+class SpeedLimit(TrafficObject):
 
     def __init__(self, speed_limit):
         self.speed_limit = speed_limit
@@ -45,7 +45,7 @@ class SpeedLimit(TrafficObjects):
         car_state['speed_limit'] = self.speed_limit
 
 
-class StopSign(TrafficObjects):
+class StopSign(TrafficObject):
     """
     Stop Sign object would wait
     """
