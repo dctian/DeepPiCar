@@ -1,10 +1,13 @@
 #### [DeepPiCar Series](https://towardsdatascience.com/tagged/deep-pi-car)
 
-# DeepPiCar — Part 1: How to Build a Deep Learning, Self Driving Robotic Car on a
-Shoestring Budget
+# DeepPiCar — Part 1: How to Build a Deep Learning, Self Driving Robotic Car on a Shoestring Budget
 
-## An overview of how to build a Raspberry Pi and TensorFlow powered, self-driving
-robotic car
+## An overview of how to build a Raspberry Pi and TensorFlow powered, self-driving robotic car
+
+### By [David Tian](https://towardsdatascience.com/@dctian)
+
+Hacker, tinkerer, and engineer. I am passionate about machine learning, AI, and
+anything technology related.
 
 ![](https://cdn-images-1.medium.com/max/800/1*4GhtKM-eyuYqEpZnnUJZ9w@2x.jpeg)
 
@@ -23,13 +26,16 @@ Here is a sneak peek at your final product.
 
 ![](https://cdn-images-1.medium.com/max/600/1*3sMJxWJ34vQH0WobdFPVAA.jpeg)
 
+Lane Following
+
 ![](https://cdn-images-1.medium.com/max/600/1*bYqrTsiMnoaKu9CfjewlEg.jpeg)
-<span class="figcaption_hack">Lane Following (left) and Traffic Sign and People Detection (right) from
+
+Traffic Sign and People Detection (right) from
 DeepPiCar’s DashCam</span>
 
 ### Our Road Map
 
-Part 2: I will list what hardware to buy and how to set them up. In short, you
+*Part 2*: I will list what hardware to buy and how to set them up. In short, you
 will need a [Raspberry
 Pi](https://www.amazon.com/CanaKit-Raspberry-Power-Supply-Listed/dp/B07BC6WH7V/)
 board($50), [SunFounder PiCar
@@ -41,25 +47,26 @@ software drivers needed by Raspberry Pi and PiCar.
 
 ![](https://cdn-images-1.medium.com/max/400/1*H7mwt6TcJtZc28fsKh42xg.jpeg)
 
+Raspberry Pi 3 B+
+
 ![](https://cdn-images-1.medium.com/max/400/1*LUD3NFk4hCz5wFpRWSGODQ.jpeg)
 
-![](https://cdn-images-1.medium.com/max/600/1*RIddRse2MoaJtSFes6VkgQ.jpeg)
-<span class="figcaption_hack">Raspberry Pi 3 B+ (left), SunFounder PiCar-V (middle), Google Edge TPU (right)</span>
+SunFounder PiCar-V Robotic Car Kit
 
-Part 3: We will set up all the Computer Vision and Deep Learning software
+<img src="https://cdn-images-1.medium.com/max/600/1*RIddRse2MoaJtSFes6VkgQ.jpeg" width="300" />
+
+Google Edge TPU Accelerator
+
+*Part 3*: We will set up all the Computer Vision and Deep Learning software
 needed. The main software tools we use are [Python](https://www.python.org/)
 (the de-facto programming language for Machine Learning/AI tasks), [OpenCV
 ](https://github.com/opencv/opencv)(a powerful computer vision package) and
 [Tensorflow ](https://www.tensorflow.org/)(Google’s popular deep learning
 framework). Note all the software we use here are FREE and open source!
 
-![](https://cdn-images-1.medium.com/max/400/1*_wbDOXgPIxEsHLu7KEFY_w.png)
+![](https://cdn-images-1.medium.com/max/800/1*_jABdMfUVcyPdi5b3zlfVg.jpeg)
 
-![](https://cdn-images-1.medium.com/max/600/1*f5ySeQqn5E8SpRBZXKcvCQ.jpeg)
-
-![](https://cdn-images-1.medium.com/max/400/1*FseKzrJydt1A8eV7pY0FDQ.png)
-
-Part 4: With the (tedious) hardware and software setup out of the way, we will
+*Part 4*: With the (tedious) hardware and software setup out of the way, we will
 dive right into the FUN parts! Our first project is to use python and OpenCV to
 teach DeepPiCar to navigate autonomously on a winding single lane road by
 detecting lane lines and steer accordingly.
@@ -67,7 +74,7 @@ detecting lane lines and steer accordingly.
 ![](https://cdn-images-1.medium.com/max/800/1*cVqpqZ129JiiQZxZwqMlMg.jpeg)
 <span class="figcaption_hack">Step-by-Step Lane Detection</span>
 
-Part 5: we will train DeepPiCar to navigate the lane autonomously without having
+*Part 5*: we will train DeepPiCar to navigate the lane autonomously without having
 to explicitly write logic to control it, as was done in our first project. This
 is achieved by using “behavior cloning”, where we use just the videos of the
 road and the correct steering angles for each video frame to train DeepPiCar to
@@ -78,7 +85,7 @@ detect road features and make the correct steering decisions.
 
 <span class="figcaption_hack">Lane Following in Action</span>
 
-Lastly, in Part 6: We will use deep learning techniques such as [single shot
+Lastly, in *Part 6*: We will use deep learning techniques such as [single shot
 multi-box object detection](https://arxiv.org/abs/1512.02325) and [transfer
 learning](https://machinelearningmastery.com/transfer-learning-for-deep-learning/)
 to teach DeepPiCar to detect various (miniature) traffic signs and pedestrians
@@ -107,41 +114,6 @@ to expect as output.
 * Lastly, you will need about *$250-$300* to buy all the hardware and working PC
 (Windows/Mac or Linux). Again, all the software used will be free.
 
-### Further Thoughts [Optional]
-
-This is optional reading, as I try to cover everything you need to know in my
-articles. However, if you want to dive deeper into deep learning, (pun
-intended), in additional to the links I provided throughout the article, here
-are some more resources to check out.
-
-[Andrew Ng](https://en.wikipedia.org/wiki/Andrew_Ng)’s Machine Learning and Deep
-Learning courses on [Coursera](https://www.coursera.org/). It was these courses
-that ignited my passion for Machine Learning and AI, and gave me the inspiration
-to create DeepPiCar.
-
-* [Machine Learning](https://www.coursera.org/learn/machine-learning) (FREE): This
-course covers traditional Machine learning techniques, such as Linear
-regression, Logistic regression, and Support Vector Machines, etc, as well as
-Neural Networks. It was created back in 2012, so some of the tools it uses,
-namely Matlab/Octave, are out of fashion, and it didn’t talk about deep learning
-in great length. But the concepts it teaches you are invaluable. You only need
-high school level math and some basic programming skills to take the course and
-Dr. Ng explains difficult concepts like backpropagation extremely well. It takes
-about 3 months to complete this course.
-
-![](https://cdn-images-1.medium.com/max/800/1*V71ojAC3PXiJfK30Xr9mjA.jpeg)
-
-* [Deep Learning 5-Course
-Specialization](https://www.deeplearning.ai/deep-learning-specialization/) (FREE
-or $50/month if you want to get the certificate): This course was introduced in
-early 2018. So it covers all the latest AI research up to that time, such as
-Fully Connected Neural Networks, Convolutional Neural Network (CNN), and
-Sequence Models (RNN/LSTM). This course was such a treat for me. As an engineer,
-I always wonder how some of the cool gadgets work, such as how does Siri respond
-to your questions, and how does a car recognize objects on the road, etc. Now I
-know. It takes about 3–4 months to complete this 5-course specialization.
-
-![](https://cdn-images-1.medium.com/max/800/1*lnWyrQUs6d2CWbG469I8Ag.jpeg)
 
 ### What’s Next
 
@@ -170,17 +142,6 @@ Learning](https://medium.com/@dctian/deeppicar-part-5-lane-following-via-deep-le
 Part 6: [Traffic Sign and Pedestrian Detection and
 Handling](https://medium.com/@dctian/deeppicar-part-6-963334b2abe0?source=your_stories_page---------------------------)
 
-* [Deep Learning](https://towardsdatascience.com/tagged/deep-learning?source=post)
-* [Self Driving
-Cars](https://towardsdatascience.com/tagged/self-driving-cars?source=post)
-* [Raspberry Pi](https://towardsdatascience.com/tagged/raspberry-pi?source=post)
-* [TensorFlow](https://towardsdatascience.com/tagged/tensorflow?source=post)
-* [Deep Pi Car](https://towardsdatascience.com/tagged/deep-pi-car?source=post)
 
-### [David Tian](https://towardsdatascience.com/@dctian)
-
-Hacker, tinkerer, and engineer. I am passionate about machine learning, AI, and
-anything technology related. DeepPiCar GitHub:
-[https://github.com/dctian](https://github.com/dctian)
 
 
