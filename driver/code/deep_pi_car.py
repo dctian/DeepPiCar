@@ -113,7 +113,7 @@ class DeepPiCar(object):
         return image
 
     def follow_lane(self, image):
-        #image = self.lane_follower.follow_lane(image)
+        image = self.lane_follower.follow_lane(image)
         return image
 
 
