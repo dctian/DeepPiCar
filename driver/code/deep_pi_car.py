@@ -25,11 +25,11 @@ class DeepPiCar(object):
         self.camera.set(3, self.__SCREEN_WIDTH)
         self.camera.set(4, self.__SCREEN_HEIGHT)
 
-        self.pan_servo = picar.Servo.Servo(1)
+        self.pan_servo = picar.Servo.Servo(1) #Only needed if you have installed the double axis motor at the front
         self.pan_servo.offset = -30  # calibrate servo to center
         self.pan_servo.write(90)
 
-        self.tilt_servo = picar.Servo.Servo(2)
+        self.tilt_servo = picar.Servo.Servo(2) #Only needed if you have installed the double axis motor at the front
         self.tilt_servo.offset = 20  # calibrate servo to center
         self.tilt_servo.write(90)
 
@@ -44,7 +44,7 @@ class DeepPiCar(object):
 
         self.lane_follower = HandCodedLaneFollower(self)
         self.traffic_sign_processor = ObjectsOnRoadProcessor(self)
-        # lane_follower = DeepLearningLaneFollower()
+        # lane_follower = DeepLearningLaneFollower(self)
 
         self.fourcc = cv2.VideoWriter_fourcc(*'XVID')
         datestr = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
