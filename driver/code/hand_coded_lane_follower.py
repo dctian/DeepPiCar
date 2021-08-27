@@ -291,9 +291,14 @@ def make_points(frame, line):
     y2 = int(y1 * 1 / 2)  # make points from middle of the frame down
 
     # bound the coordinates within the frame
-    x1 = max(-width, min(2 * width, int((y1 - intercept) / slope)))
-    x2 = max(-width, min(2 * width, int((y2 - intercept) / slope)))
-    return [[x1, y1, x2, y2]]
+    try:
+        x1 = max(-width, min(2 * width, int((y1 - intercept) / slope)))
+        x2 = max(-width, min(2 * width, int((y2 - intercept) / slope)))
+        return [[x1, y1, x2, y2]]
+    except: # Fix infinite slope error 
+        x1 = max(-width, min(2 * width, int((y1 - intercept) / 0.001)))
+        x2 = max(-width, min(2 * width, int((y2 - intercept) / 0.001)))
+        return [[x1, y1, x2, y2]]
 
 
 ############################
