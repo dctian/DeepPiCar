@@ -10,6 +10,8 @@ import edgetpu.detection.engine
 import cv2
 from PIL import Image
 
+import traceback
+
 def main():
     os.chdir('/home/pi/DeepPiCar/models/object_detection')
     
